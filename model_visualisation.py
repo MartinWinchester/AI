@@ -1,6 +1,6 @@
 from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
-from model import BirdModel, BirdAgent, FoodAgent
+from model import BirdModel, BirdAgent, FoodAgent, PredatorAgent
 
 
 def agent_portrayal(agent):
@@ -15,6 +15,10 @@ def agent_portrayal(agent):
         portrayal["Color"] = "green"
         portrayal["Layer"] = 1
         portrayal["r"] = 0.3
+    elif isinstance(agent, PredatorAgent):
+        portrayal["Color"] = "black"
+        portrayal["Layer"] = 2
+        portrayal["r"] = 1
     return portrayal
 
 
