@@ -34,7 +34,6 @@ class BirdAgent(Agent):
             self.move()
             self.eat()
 
-
     def eat(self):
         this_cell = self.model.grid.get_cell_list_contents([self.pos])
         if this_cell:
@@ -43,7 +42,6 @@ class BirdAgent(Agent):
                 self.model.grid.remove_agent(grass[0])
                 self.score += self.model.score_for_food
                 print(str(self.unique_id) + " " + str(self.score))
-
 
     def move(self):
         if self.speed == self.min_speed:
@@ -145,18 +143,6 @@ class PredatorAgent(Agent):
                 bird[0].score -= self.model.score_for_death
                 self.model.grid.remove_agent(bird[0])
 
-    def chase(self):
-        for i in range(1, 15):
-            for i2 in range(-i, i):
-                for i3 in range(-i, i):
-                    this_cell = self.model.grid.get_cell_list_contents([(np.clip(self.pos[0]+i2, 0, 99), np.clip(self.pos[1]+i3, 0, 49))])
-                    if this_cell:
-                        bird = [obj for obj in this_cell if isinstance(obj, BirdAgent)]
-                        if bird:
-                            return np.clip(i2, -1, 1), np.clip(i3, -1, 1)
-        random_direction = random.choice(directions)
-        return direction_dict[random_direction][0], direction_dict[random_direction][1]
-
     def move(self):
         if self.speed == self.min_speed:
             # if at min speed 50-50 accelerate or hold speed
@@ -182,6 +168,5 @@ class PredatorAgent(Agent):
             for i in range(-self.turn_speed, self.turn_speed + 1):
                 valid_directions.append(directions[(curr_index + i) % len(directions)])
             self.orientation = random.choice(valid_directions)
-            direct = self.chase()
             self.model.grid.move_agent(self, (
-            x + direct[0],  y + direct[1]))
+            x + direction_dict[self.orientation][0], y + direction_dict[self.orientation][1]))
