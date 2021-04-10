@@ -1,4 +1,4 @@
-from mesa.visualization.modules import CanvasGrid
+from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import BirdModel, BirdAgent, FoodAgent, PredatorAgent
 
@@ -25,13 +25,16 @@ def agent_portrayal(agent):
 n = 20
 width = 100
 height = 50
-growth_wait = 2
 grid = CanvasGrid(agent_portrayal, width, height, 800, 800*height/width)
 
-server = ModularServer(BirdModel,
-                       [grid],
-                       "Bird Model",
-                       {"n": n, "width": width, "height": height, "growth_wait": growth_wait})
+chart = ChartModule([{"Label": "TotalScore",
+                      "Color": "Black"}],
+                    data_collector_name='dc')
 
-server.port = 8521 # The default
+server = ModularServer(BirdModel,
+                       [grid, chart],
+                       "Bird Model",
+                       {"n": n, "width": width, "height": height})
+
+server.port = 8521
 server.launch()
