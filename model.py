@@ -4,7 +4,7 @@ import numpy as np
 from mesa.time import RandomActivation as Activation
 from mesa.space import MultiGrid as Space
 from mesa.datacollection import DataCollector
-
+from modelGA import BirdAgentGA
 
 direction_dict = {"N": (0, 1), "NE": (1, 1), "E": (1, 0), "SE": (1, -1), "S": (0, -1), "SW": (-1, -1), "W": (-1, 0),
                   "NW": (-1, +1)}
@@ -165,7 +165,7 @@ class BirdModel(Model):
             elif algorithm == "Q":
                 raise NotImplementedError
             elif algorithm == "GA":
-                raise NotImplementedError
+                bird = BirdAgentGA(i, self)
             elif algorithm == "DRL":
                 raise NotImplementedError
             self.schedule.add(bird)
