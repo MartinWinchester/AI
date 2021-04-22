@@ -8,6 +8,9 @@ import pickle
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--number", default=20, help="population size")
 parser.add_argument("-a", "--algorithm", default="Dummy", help="algorithm to be used, use one of Dummy, GA, Q, DRL")
+parser.add_argument("-b", "--best", default="False", help="whole population with best dna so far")
+parser.add_argument("-p", "--predators", default=None, help="number of predators")
+parser.add_argument("-f", "--food", default="True", help="if true add food to grid")
 
 args = parser.parse_args()
 
@@ -18,11 +21,13 @@ def agent_portrayal(agent):
                  "r": 0.5}
 
     if isinstance(agent, BirdAgent):
-        portrayal["Color"] = "blue"
         portrayal["Layer"] = 0
     if isinstance(agent, BirdAgentGA):
-        portrayal["Color"] = "blue"
-        portrayal["Layer"] = 0
+        portrayal["Layer"] = agent.unique_id
+        if agent.flocking():
+            portrayal["Color"] = "red"
+        else:
+            portrayal["Color"] = "blue"
     elif isinstance(agent, FoodAgent):
         portrayal["Color"] = "green"
         portrayal["Layer"] = 1
@@ -34,6 +39,8 @@ def agent_portrayal(agent):
     return portrayal
 
 
+p = int(args.predators)
+f = str(args.food).lower() == "true"
 width = 100
 height = 50
 grid = CanvasGrid(agent_portrayal, width, height, 800, 800*height/width)
@@ -41,14 +48,21 @@ grid = CanvasGrid(agent_portrayal, width, height, 800, 800*height/width)
 chart = ChartModule([{"Label": "TotalScore",
                       "Color": "Black"}],
                     data_collector_name='dc')
+dnas = []
+
 if args.algorithm == "GA":
-    with open("dnas.txt", "rb") as fp:
-        dnas = pickle.load(fp)
+    if str(args.best).lower() == "true":
+        with open("best_dna.txt", "rb") as fp:
+            dnas[0] = pickle.load(fp)
+    else:
+        with open("dnas.txt", "rb") as fp:
+            dnas = pickle.load(fp)
 
 server = ModularServer(BirdModel,
                        [grid, chart],
                        "Bird Model",
-                       {"n": int(args.number), "width": width, "height": height, "algorithm": args.algorithm, "dnas":dnas})
+                       {"n": int(args.number), "width": width, "height": height, "algorithm": args.algorithm,
+                        "dnas": dnas,  "predators": p, "food": f})
 
 server.port = 8521
 server.launch()

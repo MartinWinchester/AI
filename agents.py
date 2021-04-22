@@ -16,6 +16,10 @@ class BirdAgent(Agent):
         self.max_speed = 0.75
         self.min_speed = 0.25
         self.alive = True
+        self.flock_num = 3
+        # range in which other birds have to be present to the group to be considered a flock
+        self.flock_area = 6
+        self.sight = 7
 
     def step(self):
         if self.alive:
@@ -57,6 +61,15 @@ class BirdAgent(Agent):
             self.orientation = random.choice(valid_directions)
             self.model.grid.move_agent(self, (x+direction_dict[self.orientation][0], y+direction_dict[self.orientation][1]))
 
+    def flocking(self):
+        flocking = False
+        agents = [agent for agent in
+         self.model.grid.get_neighbors(self.pos, include_center=True, radius=self.flock_area, moore=True)
+         if isinstance(agent, type(self))]
+        if len(agents) >= self.flock_num:
+            flocking = True
+        return flocking
+
 
 class FoodAgent(Agent):
     """An agent with fixed initial wealth."""
@@ -86,9 +99,6 @@ class PredatorAgent(Agent):
         # self.acceleration = 0.25
         # self.max_speed = 1
         # self.min_speed = 0.25
-        self.flock_num = 3
-        # range in which other birds have to be present to the group to be considered a flock
-        self.flock_area = 3
 
     def step(self):
         self.eat()
@@ -112,7 +122,7 @@ class PredatorAgent(Agent):
         x, y = self.pos
         birds = [agent for agent in self.model.grid.get_neighbors(self.pos, include_center=False, radius=self.sight,
                                                                   moore=True) if isinstance(agent, self.enemy)]
-        hanging_birds = [bird for bird in birds if not self.is_in_flock(bird)]
+        hanging_birds = [bird for bird in birds if not bird.flocking()]
         target = None
         target_dist = None
         if hanging_birds:
@@ -141,38 +151,25 @@ class PredatorAgent(Agent):
             self.model.grid.move_agent(self, (x + direction_dict[self.orientation][0],
                                               y + direction_dict[self.orientation][1]))
 
-    def is_in_flock(self, bird):
-        flocking = False
-        if len([agent for agent
-                in self.model.grid.get_neighbors(bird.pos, include_center=False, radius=self.flock_area, moore=True)
-                if isinstance(agent, BirdAgent)]) > self.flock_num:
-            flocking = True
-        return flocking
-
 
 q_bin = 6
 o_bin = 8
 d_bin = 5
 
 
-class BirdAgentGA(Agent):
+class BirdAgentGA(BirdAgent):
     def __init__(self, unique_id, model, dna):
         super().__init__(unique_id, model)
         self.orientation = random.choice(directions)
-        # self.speed = random.randint(1, 3) / 4
         self.speed = 0.5
         self.score = 0
-        # self.turn_speed = 1
-        # self.acceleration = 0.25
-        # self.max_speed = 0.75
-        # self.min_speed = 0.25
         self.alive = True
         self.strategy = [None] * 2073600
+        self.occurred = []
         if dna is None:
             self.strategy = [random.randint(0, 7) for _ in self.strategy]
         else:
             self.strategy = dna
-        self.sight = 5
 
     def step(self):
         if self.alive:
@@ -192,6 +189,7 @@ class BirdAgentGA(Agent):
         index = q4b + q3b * q_bin + q2b * np.power(q_bin, 2) + q1b * np.power(q_bin, 3) + fo * np.power(q_bin, 4) + fd \
                * o_bin * np.power(q_bin, 4) + po * d_bin * o_bin * np.power(q_bin, 4) + pd * d_bin * np.power(q_bin, 4) \
                * np.power(o_bin, 2)
+        self.occurred.append(int(index))
         self.orientation = self.strategy[int(index)]
 
     def object_dd(self, object_type):

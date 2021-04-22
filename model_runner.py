@@ -4,71 +4,93 @@ import argparse
 from utilsGA import *
 import time
 import pickle
+import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--number", default=20, help="population size")
+parser.add_argument("-l", "--load", default="True", help="load pre-trained model from file")
 parser.add_argument("-a", "--algorithm", default="Dummy", help="algorithm to be used, use one of Dummy, GA, Q, DRL")
 parser.add_argument("-s", "--steps", default=100, help="number of steps to run in a batch")
 parser.add_argument("-lr", "--learning_rate", default=0.1, help="learning rate")
 parser.add_argument("-cp", "--checkpoint", default=10, help="number of iterations to run before creating a checkpoint")
 parser.add_argument("-m", "--mutation", default=0.05, help="how many time steps to use in one generation")
+parser.add_argument("-p", "--predators", default=None, help="number of predators")
+parser.add_argument("-f", "--food", default=True, help="if true add food to grid")
 
 args = parser.parse_args()
 start = time.perf_counter()
 n = int(args.number)
-model = BirdModel(n, 100, 50, args.algorithm)
-
+if args.predators is not None:
+    p = int(args.predators)
+else:
+    p = None
+f = str(args.food).lower() == "true"
+best_dna = []
+best_dna_score = -999999999
 if args.algorithm == "GA":
     bests = []
     worsts = []
     totals = []
     times = []
-    model = BirdModel(n, 100, 50, args.algorithm)
+    if str(args.load).lower() == "true":
+        with open("dnas.txt", "rb") as fp:
+            dnas = pickle.load(fp)
+            model = BirdModel(n, 100, 50, args.algorithm, dnas, predators=p, food=f)
+    else:
+        model = BirdModel(n, 100, 50, args.algorithm, predators=p, food=f)
     util = Utils()
-    iter = 1
+    iteration = 1
     while 1:
         for i in range(int(args.steps)):
             model.step()
         agents = [agent for agent in model.schedule.agents if isinstance(agent, BirdAgentGA)]
         scores = [agent.score for agent in model.schedule.agents if isinstance(agent, BirdAgentGA)]
         fitness_tuples = calc_fitness(agents)
-        new_gen = util.natural_selection(fitness_tuples, n, args.mutation)
-        print("Generation: " + str(iter))
-        iter += 1
+        if fitness_tuples[0][0] > best_dna_score:
+            best_dna = fitness_tuples[0][1]
+            best_dna_score = fitness_tuples[0][0]
+        new_gen = util.natural_selection(fitness_tuples, n, float(args.mutation))
+        print("Generation: " + str(iteration))
+        iteration += 1
         total = model.dc.model_vars["TotalScore"][-1]
         best = max(scores)
         worst = min(scores)
-        # print("Total Score: " + str(total))
-        # print("Best Score: " + str(best))
-        # print("Worst Score: " + str(worst))
         end = time.perf_counter()
         ellapsed_time = end-start
-        # print("Elapsed time: " + str(time))
-        # save, log info
         totals.append(total)
         bests.append(best)
         worsts.append(worst)
         times.append(ellapsed_time)
-        if np.mod(iter, args.checkpoint) == 0:
+        if np.mod(iteration, int(args.checkpoint)) == 0:
             with open("dnas.txt", "wb") as fp:
                 pickle.dump([ag.strategy for score, ag in fitness_tuples], fp)
+            with open("best_dna.txt", "wb") as fp:
+                pickle.dump(best_dna, fp)
                 print("Totals")
-                for tot in totals:
-                    print(str(tot))
-                print("Bests")
-                for bes in bests:
-                    print(str(bes))
-                print("Worsts")
-                for wors in worsts:
-                    print(str(wors))
-                print("Times")
-                for tim in times:
-                    print(str(tim))
+            for tot in totals:
+                print(str(tot))
+            print("Bests")
+            for bes in bests:
+                print(str(bes))
+            print("Worsts")
+            for wors in worsts:
+                print(str(wors))
+            print("Times")
+            for tim in times:
+                print(str(tim))
+            df = pd.DataFrame(columns=['Total', 'Best', 'Worst', 'Time'])
+            df['Total'] = totals
+            df['Best'] = bests
+            df['Worst'] = worsts
+            df['Time'] = times
+            df.to_csv("records.csv")
         start = time.perf_counter()
-        model = BirdModel(n, 100, 50, args.algorithm, new_gen)
+        del model
+        model = BirdModel(n, 100, 50, args.algorithm, new_gen, predators=p, food=f)
 
 
 if args.algorithm != "GA":
+    model = BirdModel(n, 100, 50, args.algorithm, predators=p, food=f)
     for i in range(int(args.steps)):
         model.step()
         print(model.dc.model_vars["TotalScore"][-1])

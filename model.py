@@ -1,5 +1,6 @@
 from mesa import Model
 import random
+import numpy as np
 from mesa.time import RandomActivation as Activation
 from mesa.space import MultiGrid as Space
 from mesa.datacollection import DataCollector
@@ -12,11 +13,15 @@ def total_score(model):
 
 
 class BirdModel(Model):
-    def __init__(self, n, width, height, algorithm="Dummy", dnas=None):
+    def __init__(self, n, width, height, algorithm="Dummy", dnas=None, predators=None, food=True):
         self.score_for_food = 10
         self.score_for_death = 20
         self.num_agents = n
-        self.num_predator = round(n/4)
+        self.food = food
+        if predators is None:
+            self.num_predator = round(n/3)
+        else:
+            self.num_predator = predators
         self.growth_time = 2
         self.grid = Space(width, height, True)
         self.schedule = Activation(self)
@@ -31,7 +36,7 @@ class BirdModel(Model):
                 if dnas is None:
                     bird = BirdAgentGA(i, self, dnas)
                 else:
-                    bird = BirdAgentGA(i, self, dnas[i])
+                    bird = BirdAgentGA(i, self, dnas[np.mod(i, len(dnas))])
             elif algorithm == "DRL":
                 raise NotImplementedError
             self.schedule.add(bird)
@@ -51,7 +56,7 @@ class BirdModel(Model):
             agent_reporters={"Score": "score"})
 
     def step(self):
-        if self.schedule.time % self.growth_time == 0:
+        if self.schedule.time % self.growth_time == 0 and self.food:
             self.max_food_id += 1
             food = FoodAgent(self.max_food_id, self)
             x = random.randint(0, self.grid.width-1)
