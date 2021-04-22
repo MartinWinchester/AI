@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import BirdModel
-from agents import BirdAgent, FoodAgent, PredatorAgent, BirdAgentGA
+from agents import BirdAgent, FoodAgent, PredatorAgent, BirdAgentGA, BirdAgentUCS
 import argparse
 import pickle
 
@@ -31,11 +31,14 @@ def agent_portrayal(agent):
         portrayal["Color"] = "black"
         portrayal["Layer"] = 2
         portrayal["r"] = 1
+    elif isinstance(agent, BirdAgentUCS):
+        portrayal["Color"] = "blue"
+        portrayal["Layer"] = 0
     return portrayal
 
 
-width = 100
-height = 50
+width = 20
+height = 10
 grid = CanvasGrid(agent_portrayal, width, height, 800, 800*height/width)
 
 chart = ChartModule([{"Label": "TotalScore",
@@ -45,10 +48,15 @@ if args.algorithm == "GA":
     with open("dnas.txt", "rb") as fp:
         dnas = pickle.load(fp)
 
-server = ModularServer(BirdModel,
+    server = ModularServer(BirdModel,
                        [grid, chart],
                        "Bird Model",
                        {"n": int(args.number), "width": width, "height": height, "algorithm": args.algorithm, "dnas":dnas})
 
+else:
+    server = ModularServer(BirdModel,
+                           [grid, chart],
+                           "Bird Model",
+                           {"n": int(args.number), "width": width, "height": height, "algorithm": args.algorithm})
 server.port = 8521
 server.launch()

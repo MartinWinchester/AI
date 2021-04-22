@@ -3,6 +3,7 @@ import random
 import numpy as np
 from commonVariable import *
 from math import floor
+from utilsUCS import PriorityQueue
 
 
 class BirdAgent(Agent):
@@ -74,8 +75,8 @@ class PredatorAgent(Agent):
         self.algorithm = algorithm
         if algorithm == "Dummy":
             self.enemy = BirdAgent
-        elif algorithm == "Q":
-            raise NotImplementedError
+        elif algorithm == "UCS":
+            self.enemy = BirdAgentUCS
         elif algorithm == "GA":
             self.enemy = BirdAgentGA
         elif algorithm == "DRL":
@@ -240,3 +241,100 @@ class BirdAgentGA(Agent):
             self.find_action()
             self.model.grid.move_agent(self, (x + direction_dict[directions[self.orientation]][0],
                                               y + direction_dict[directions[self.orientation]][1]))
+
+class BirdAgentUCS(Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.orientation = random.choice(directions)
+        self.speed = 0.5
+        self.score = 0
+        self.turn_speed = 1
+        self.acceleration = 0.25
+        self.max_speed = 0.75
+        self.min_speed = 0.25
+        self.alive = True
+        self.queue = PriorityQueue()
+        self.sight = 3
+
+
+
+    def step(self):
+        if self.alive:
+            self.move()
+            self.eat()
+
+    def eat(self):
+        this_cell = self.model.grid.get_cell_list_contents([self.pos])
+        if this_cell:
+            grass = [obj for obj in this_cell if isinstance(obj, FoodAgent)]
+            if grass:
+                self.model.grid.remove_agent(grass[0])
+                self.score += self.model.score_for_food
+
+    def move(self):
+        tick = self.model.schedule.time
+        inverse_speed = 1/self.speed
+        if tick % inverse_speed == 0:
+            x, y = self.pos
+            z = self.ucs()
+            best_move = z[1][0]
+
+            #best_index = direction_dict.index(best_move)
+
+            #self.orientation = random.choice(valid_directions)
+            self.model.grid.move_agent(self, (x+best_move[0], y+best_move[1]))
+
+
+
+    def ucs(self):
+        best_state = ((self.pos[0], self.pos[1] + self.sight), [(0, 1)] * self.sight, np.sum([self.posvalue(x) - 1 for x in [(self.pos[0], self.pos[1]+y) for y in range(self.sight)]]))
+        self.queue.update((self.pos, [], self.posvalue(self.pos)), -self.posvalue(self.pos))
+        visitedNodes = []
+        while 1:
+            if self.queue.isEmpty():
+                break
+            state = self.queue.pop()
+            if state[0] not in visitedNodes:
+                visitedNodes.append(state[0])
+               # if problem.isGoalState(state[0]):
+                #    return state[1]\
+                if state[2] >= best_state[2] and (np.absolute(self.pos[0] - state[0][0]) == self.sight or np.absolute(self.pos[1] - state[0][1]) == self.sight):
+                    best_state = state
+
+                #successor_list = [(element, (x, y), self.posvalue(element)) for element in [(state[0][0] + x, state[0][1] + y) for x, y in direction_vector_list]]
+                if len(state[1]) < 2*self.sight:
+
+                    successor_list = []
+                    for x, y in direction_vector_list:
+                        element = ((state[0][0] + x)%self.model.grid.width, (state[0][1] + y)%self.model.grid.height)
+                        if np.absolute(self.pos[0] - element[0]) <= self.sight and np.absolute(self.pos[1] - element[1]) <= self.sight:
+                            successor_list.append((element, (x, y), self.posvalue(element)))
+
+                    for child in successor_list:
+                        self.queue.update((child[0], state[1] + [child[1]], state[2]+child[2] - len(state[1])), state[2]-child[2] + len(state[1]))
+
+        return best_state
+
+
+    def posvalue(self, pos):
+        objects = [agent for agent in self.model.grid.get_neighbors(self.pos, include_center=False, radius=self.sight,
+                                                                    moore=True) if not isinstance(agent, BirdAgentUCS)]
+
+        value = 0
+        for object in objects:
+            if isinstance(object, PredatorAgent):
+                #distance = np.linalg.norm(np.array(pos) - np.array(object.pos))
+                distance = self.model.grid.get_distance(pos, object.pos)
+                if object.pos == pos:
+                    value -= 3 * self.model.score_for_death
+                else:
+                    value -= 1 / distance * self.model.score_for_death
+
+            if isinstance(object, FoodAgent):
+                distance = np.linalg.norm(np.array(pos) - np.array(object.pos))
+                if object.pos == pos:
+                    value += 3 * self.model.score_for_food
+                else:
+                    value += 1 / distance * self.model.score_for_food
+
+        return value
