@@ -254,7 +254,7 @@ class BirdAgentUCS(Agent):
         self.max_speed = 0.75
         self.min_speed = 0.25
         self.alive = True
-        self.queue = PriorityQueue()
+        self.queue = None
         self.sight = 5
 
     def step(self):
@@ -281,9 +281,7 @@ class BirdAgentUCS(Agent):
             self.model.grid.move_agent(self, (x+best_move[0], y+best_move[1]))
 
     def ucs(self):
-        best_state = ((self.pos[0], self.pos[1] + self.sight), [(0, 1)] * self.sight,
-                      np.sum([self.pos_value(x) - 1 for x in [(self.pos[0], self.pos[1] + y)
-                                                              for y in range(self.sight)]]))
+        self.queue = PriorityQueue()
         self.queue.update((self.pos, [], self.pos_value(self.pos)), -self.pos_value(self.pos))
         visitedNodes = []
         while 1:
@@ -292,9 +290,9 @@ class BirdAgentUCS(Agent):
             state = self.queue.pop()
             if state[0] not in visitedNodes:
                 visitedNodes.append(state[0])
-                if state[2] >= best_state[2] and (np.absolute(self.pos[0] - state[0][0]) == self.sight
-                                                  or np.absolute(self.pos[1] - state[0][1]) == self.sight):
-                    best_state = state
+                if np.absolute(self.pos[0] - state[0][0]) == self.sight or \
+                        np.absolute(self.pos[1] - state[0][1]) == self.sight:
+                    return state
 
                 if len(state[1]) < 2*self.sight:
 
@@ -307,7 +305,9 @@ class BirdAgentUCS(Agent):
                     for child in successor_list:
                         self.queue.update((child[0], state[1] + [child[1]], state[2]+child[2] - 1), -state[2]-child[2] + 1)
 
-        return best_state
+        return ((self.pos[0], self.pos[1] + self.sight), [(0, 1)] * self.sight,
+                np.sum([self.pos_value(x) - 1 for x in [(self.pos[0], self.pos[1] + y)
+                                                        for y in range(self.sight)]]))
 
     def pos_value(self, pos):
         pos = (np.mod(pos[0], self.model.grid.width), np.mod(pos[1], self.model.grid.height))
