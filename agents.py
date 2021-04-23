@@ -242,6 +242,7 @@ class BirdAgentGA(Agent):
             self.model.grid.move_agent(self, (x + direction_dict[directions[self.orientation]][0],
                                               y + direction_dict[directions[self.orientation]][1]))
 
+
 class BirdAgentUCS(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
@@ -254,9 +255,7 @@ class BirdAgentUCS(Agent):
         self.min_speed = 0.25
         self.alive = True
         self.queue = PriorityQueue()
-        self.sight = 3
-
-
+        self.sight = 5
 
     def step(self):
         if self.alive:
@@ -279,16 +278,13 @@ class BirdAgentUCS(Agent):
             z = self.ucs()
             best_move = z[1][0]
 
-            #best_index = direction_dict.index(best_move)
-
-            #self.orientation = random.choice(valid_directions)
             self.model.grid.move_agent(self, (x+best_move[0], y+best_move[1]))
 
-
-
     def ucs(self):
-        best_state = ((self.pos[0], self.pos[1] + self.sight), [(0, 1)] * self.sight, np.sum([self.posvalue(x) - 1 for x in [(self.pos[0], self.pos[1]+y) for y in range(self.sight)]]))
-        self.queue.update((self.pos, [], self.posvalue(self.pos)), -self.posvalue(self.pos))
+        best_state = ((self.pos[0], self.pos[1] + self.sight), [(0, 1)] * self.sight,
+                      np.sum([self.pos_value(x) - 1 for x in [(self.pos[0], self.pos[1] + y)
+                                                              for y in range(self.sight)]]))
+        self.queue.update((self.pos, [], self.pos_value(self.pos)), -self.pos_value(self.pos))
         visitedNodes = []
         while 1:
             if self.queue.isEmpty():
@@ -296,45 +292,58 @@ class BirdAgentUCS(Agent):
             state = self.queue.pop()
             if state[0] not in visitedNodes:
                 visitedNodes.append(state[0])
-               # if problem.isGoalState(state[0]):
-                #    return state[1]\
-                if state[2] >= best_state[2] and (np.absolute(self.pos[0] - state[0][0]) == self.sight or np.absolute(self.pos[1] - state[0][1]) == self.sight):
+                if state[2] >= best_state[2] and (np.absolute(self.pos[0] - state[0][0]) == self.sight
+                                                  or np.absolute(self.pos[1] - state[0][1]) == self.sight):
                     best_state = state
 
-                #successor_list = [(element, (x, y), self.posvalue(element)) for element in [(state[0][0] + x, state[0][1] + y) for x, y in direction_vector_list]]
                 if len(state[1]) < 2*self.sight:
 
                     successor_list = []
                     for x, y in direction_vector_list:
-                        element = ((state[0][0] + x)%self.model.grid.width, (state[0][1] + y)%self.model.grid.height)
+                        element = ((state[0][0] + x)%self.model.grid.width, (state[0][1] + y) % self.model.grid.height)
                         if np.absolute(self.pos[0] - element[0]) <= self.sight and np.absolute(self.pos[1] - element[1]) <= self.sight:
-                            successor_list.append((element, (x, y), self.posvalue(element)))
+                            successor_list.append((element, (x, y), self.pos_value(element)))
 
                     for child in successor_list:
-                        self.queue.update((child[0], state[1] + [child[1]], state[2]+child[2] - len(state[1])), state[2]-child[2] + len(state[1]))
+                        self.queue.update((child[0], state[1] + [child[1]], state[2]+child[2] - 1), -state[2]-child[2] + 1)
 
         return best_state
 
-
-    def posvalue(self, pos):
+    def pos_value(self, pos):
+        pos = (np.mod(pos[0], self.model.grid.width), np.mod(pos[1], self.model.grid.height))
         objects = [agent for agent in self.model.grid.get_neighbors(self.pos, include_center=False, radius=self.sight,
                                                                     moore=True) if not isinstance(agent, BirdAgentUCS)]
 
         value = 0
         for object in objects:
             if isinstance(object, PredatorAgent):
-                #distance = np.linalg.norm(np.array(pos) - np.array(object.pos))
-                distance = self.model.grid.get_distance(pos, object.pos)
-                if object.pos == pos:
+                distance = self.get_distance_with_wraparound(pos, object.pos)
+                if distance == 0.0:
                     value -= 3 * self.model.score_for_death
                 else:
                     value -= 1 / distance * self.model.score_for_death
 
             if isinstance(object, FoodAgent):
-                distance = np.linalg.norm(np.array(pos) - np.array(object.pos))
-                if object.pos == pos:
+                distance = self.get_distance_with_wraparound(pos, object.pos)
+                if distance == 0.0:
                     value += 3 * self.model.score_for_food
                 else:
                     value += 1 / distance * self.model.score_for_food
 
         return value
+
+    def get_distance_with_wraparound(self, p1, p2):
+        p1 = (np.mod(p1[0], self.model.grid.width), np.mod(p1[1], self.model.grid.height))
+        p2 = (np.mod(p2[0], self.model.grid.width), np.mod(p2[1], self.model.grid.height))
+        min_dist = np.abs(np.array(p1) - np.array(p2))  # min_dist[0] = min x distance, min_dist[1] = min y distance
+        # x
+        if p1[0] < p2[0] and np.abs((p1[0]+self.model.grid.width) - p2[0]) < min_dist[0]:
+            min_dist[0] = np.abs((p1[0]+self.model.grid.width) - p2[0])
+        if p1[0] > p2[0] and np.abs(p1[1] - (p2[1]+self.model.grid.height)) < min_dist[0]:
+            min_dist[0] = np.abs(p1[1] - (p2[1]+self.model.grid.height))
+        # y
+        if p1[1] < p2[1] and np.abs((p1[1]+self.model.grid.height) - p2[1]) < min_dist[1]:
+            min_dist[1] = np.abs((p1[1]+self.model.grid.height) - p2[1])
+        if p1[1] > p2[1] and np.abs(p1[1] - (p2[1]+self.model.grid.height)) < min_dist[1]:
+            min_dist[1] = np.abs(p1[1] - (p2[1]+self.model.grid.height))
+        return np.sqrt(np.power(min_dist[0], 2) + np.power(min_dist[1], 2))

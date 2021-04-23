@@ -37,8 +37,8 @@ def agent_portrayal(agent):
     return portrayal
 
 
-width = 20
-height = 10
+width = 100
+height = 50
 grid = CanvasGrid(agent_portrayal, width, height, 800, 800*height/width)
 
 chart = ChartModule([{"Label": "TotalScore",
