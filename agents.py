@@ -64,8 +64,8 @@ class BirdAgent(Agent):
     def flocking(self):
         flocking = False
         agents = [agent for agent in
-         self.model.grid.get_neighbors(self.pos, include_center=True, radius=self.flock_area, moore=True)
-         if isinstance(agent, type(self))]
+                  self.model.grid.get_neighbors(self.pos, include_center=True, radius=self.flock_area, moore=True)
+                  if isinstance(agent, type(self))]
         if len(agents) >= self.flock_num:
             flocking = True
         return flocking
@@ -164,7 +164,6 @@ class BirdAgentGA(BirdAgent):
         self.speed = 0.5
         self.score = 0
         self.alive = True
-        self.strategy = [None] * 2073600
         self.occurred = []
         if dna is None:
             self.strategy = [random.randint(0, 7) for _ in self.strategy]
@@ -182,10 +181,10 @@ class BirdAgentGA(BirdAgent):
         pd = np.clip(round(pd/2), 0, d_bin-1)
         fd = np.clip(round(fd/2), 0, d_bin-1)
         radius = floor(self.sight / 2)
-        q1b = round(self.q_count((self.pos[0] - radius, self.pos[1] + radius), BirdAgentGA))
-        q2b = round(self.q_count((self.pos[0] + radius, self.pos[1] + radius), BirdAgentGA))
-        q3b = round(self.q_count((self.pos[0] + radius, self.pos[1] - radius), BirdAgentGA))
-        q4b = round(self.q_count((self.pos[0] - radius, self.pos[1] - radius), BirdAgentGA))
+        q1b = np.clip(round(self.q_count((self.pos[0] - radius, self.pos[1] + radius), BirdAgentGA)), 0, q_bin-1)
+        q2b = np.clip(round(self.q_count((self.pos[0] + radius, self.pos[1] + radius), BirdAgentGA)), 0, q_bin-1)
+        q3b = np.clip(round(self.q_count((self.pos[0] + radius, self.pos[1] - radius), BirdAgentGA)), 0, q_bin-1)
+        q4b = np.clip(round(self.q_count((self.pos[0] - radius, self.pos[1] - radius), BirdAgentGA)), 0, q_bin-1)
         index = q4b + q3b * q_bin + q2b * np.power(q_bin, 2) + q1b * np.power(q_bin, 3) + fo * np.power(q_bin, 4) + fd \
                * o_bin * np.power(q_bin, 4) + po * d_bin * o_bin * np.power(q_bin, 4) + pd * d_bin * np.power(q_bin, 4) \
                * np.power(o_bin, 2)

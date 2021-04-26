@@ -15,7 +15,7 @@ parser.add_argument("-lr", "--learning_rate", default=0.1, help="learning rate")
 parser.add_argument("-cp", "--checkpoint", default=10, help="number of iterations to run before creating a checkpoint")
 parser.add_argument("-m", "--mutation", default=0.05, help="how many time steps to use in one generation")
 parser.add_argument("-p", "--predators", default=None, help="number of predators")
-parser.add_argument("-f", "--food", default=True, help="if true add food to grid")
+parser.add_argument("-f", "--food", default="True", help="if true add food to grid")
 
 args = parser.parse_args()
 start = time.perf_counter()

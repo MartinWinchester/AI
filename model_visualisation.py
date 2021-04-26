@@ -39,7 +39,10 @@ def agent_portrayal(agent):
     return portrayal
 
 
-p = int(args.predators)
+if args.predators is None:
+    p = None
+else:
+    p = int(args.predators)
 f = str(args.food).lower() == "true"
 width = 100
 height = 50
@@ -53,7 +56,7 @@ dnas = []
 if args.algorithm == "GA":
     if str(args.best).lower() == "true":
         with open("best_dna.txt", "rb") as fp:
-            dnas[0] = pickle.load(fp)
+            dnas.append(pickle.load(fp).strategy)
     else:
         with open("dnas.txt", "rb") as fp:
             dnas = pickle.load(fp)
