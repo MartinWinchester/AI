@@ -1,0 +1,128 @@
+Artificial Intelligence (CS7IS2)
+Group Meeting Minutes
+
+Date: 12/3/21 from 11:00am - 11:30am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+
+Summary
+•	Introduction of group members and their AI interests
+•	Agreed to look for extra two extra members in order to fulfill the requirements
+•	Undertook a brainstorming session to establish which interesting areas to try working on. 
+•	Agreed to meet again one week later 19/3/21.
+
+Date: 19/3/21 from 11:00am - 11:30am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	Introduction of the two new members and their AI interests.
+•	Members discussed the possibility of tackling retro games e.g. Space invaders, Pacman, Missile Command using genetic algorithm, RL or RNN for the assignment.
+•	Team agreed to discuss more ideas in the next meeting and pick the most suitable one. 
+•	The team agreed to meet on Wednesday and Friday at 11:00 am weekly.
+
+Date: 24/3/21 from 11:00am - 11:45am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	This team discussed all the suggested problems to implement. These are; 
+o	Retro Game e.g. Space invaders, Pacman, Missile Command with the following algorithms; Genetic Algorithm, Reinforcement Learning, Recurrent Neural Network.
+o	Face recognition to predict sexuality
+o	TRex Dino Game with the following algorithms; Reinforcent Learning, Q-learning, Convolutional Neural Networks
+o	Bird flocking with the following algorithms; boltzmann machines, Qlearning, Deep Reinforcement Learning
+•	The team agreed to go with the Bird Flocking idea and agreed to go and look into possible ways of implementing it and the algorithms would be best suited to test it out.
+
+Date: 26/3/21 from 11:00am - 11:45am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	This meeting’s agenda was to discuss the best way to implement the bird flocking environment and the algorithms to test it out.
+•	After discussion, the team agreed to implement 3 algorithms; Genetic Algorithm, Deep Reinforcement Learning and Q-learning.
+•	We split the tasks as follows;
+o	Development of the bird flocking environment - Martin
+o	GA implementation - Peter
+o	Deep RL implementation - Sean
+o	Q-learning implementation - Hilda
+•	The team agreed to implement and report back up on the progress in the next meeting.
+•	The team agreed to skip the Wednesday meeting as people were swarmed with other deadlines and meet on Friday, 2/4/21.
+
+Date: 2/4/21 from 11:00am - 11:20am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	The team met briefly to discuss progress.
+•	The environment was almost complete and members had already started trying out how to implement the algorithms they were responsible for.
+•	The team agreed to skip the coming Wednesday meeting too as people were swarmed with other deadlines and meet on Friday, 9/4/21.
+
+Date: 9/4/21 from 11:00am - 11:30am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	The team met briefly to discuss progress.
+•	The Environment has been implemented and pushed to GitHub
+•	The algorithms were yet to be completed but were on course.
+•	The team agreed to pick up the pace as time was running out and meet again on Wednesday, 14/4/21 at 11:00am.
+
+
+Date: 14/4/21 from 11:00am - 11:45am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	The team discussed the feedback from Dr. Ivana about having 1 RL-based approach as opposed to two and brainstormed on possible algorithms.
+•	The team decided to try out Uniform Cost Search vis-a-vis Q-learning and pick the one that we would successfully implement.
+•	The team agreed to skip the Friday meeting due to other deadlines but ensure that they complete their tasks and share progress updates on Teams. The next meeting would be on 21/4/21.
+
+
+Date: 21/4/21 from 11:00am - 11:45am
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	Members gave an update on the progress of implementation of the algorithms.
+•	Implementation of the Genetic Algorithm model was reported as complete, the Deep Learning and the Uniform Cost Search models were yet to be completed.
+•	The GA model was running and current being trained while the Deep RL model was running but producing unsatisfactory results. The UCS model was yet to be completed but should hopefully be completed by end of day.
+•	Members agreed to meet again on Friday, 23/4/21 at 5pm.
+
+
+
+Date: 26/4/21 from 1:00pm - 1:45pm
+Members present
+1.	Martin Winchester
+2.	Peter Refila
+3.	Sean Abner Nash De Andrade
+4.	Hilda Waithaka
+
+Summary
+•	Members gave an update of the models they had implemented. All models were working as anticipated apart from the Deep Reinforcement Learning one. The team agreed to look into it and see whether any changes could be made. If not, the team would report the results as they were.
+•	Members discussed on how they would like to approach the writing of the report. The report was split into sections and each team member assigned a section to work on.
+•	The team agreed that we should first finish the report and then work on the presentation and the video as that would make things move faster.
+•	The team agreed to give a brief progress update via Teams on Tuesday (27/4/21) night preceding the main team meeting on Wednesday (28/4/21) at 3pm.
+
+
