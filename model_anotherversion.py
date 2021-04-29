@@ -195,8 +195,6 @@ class BirdModel(Model):
             self.grid.place_agent(food, (x, y))
         self.dc.collect(self)
         self.schedule.step()
-<<<<<<< HEAD
-
 
 class PredatorAgent(Agent):
 

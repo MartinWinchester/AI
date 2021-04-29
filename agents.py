@@ -1,6 +1,9 @@
 from mesa import Agent
 import random
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras.layers import Dense
+from tensorflow.keras import Model
 from commonVariable import *
 from math import floor
 from utilsUCS import PriorityQueue
@@ -93,7 +96,7 @@ class PredatorAgent(Agent):
         elif algorithm == "GA":
             self.enemy = BirdAgentGA
         elif algorithm == "DRL":
-            raise NotImplementedError
+            self.enemy = BirdAgentRL
         self.score = 0
         self.sight = 5
         self.turn_speed = 1
@@ -328,6 +331,123 @@ class BirdAgentUCS(Agent):
                     value += 1 / distance * self.model.score_for_food
 
         return value
+
+    def get_distance_with_wraparound(self, p1, p2):
+        p1 = (np.mod(p1[0], self.model.grid.width), np.mod(p1[1], self.model.grid.height))
+        p2 = (np.mod(p2[0], self.model.grid.width), np.mod(p2[1], self.model.grid.height))
+        min_dist = np.abs(np.array(p1) - np.array(p2))  # min_dist[0] = min x distance, min_dist[1] = min y distance
+        # x
+        if p1[0] < p2[0] and np.abs((p1[0]+self.model.grid.width) - p2[0]) < min_dist[0]:
+            min_dist[0] = np.abs((p1[0]+self.model.grid.width) - p2[0])
+        if p1[0] > p2[0] and np.abs(p1[1] - (p2[1]+self.model.grid.height)) < min_dist[0]:
+            min_dist[0] = np.abs(p1[1] - (p2[1]+self.model.grid.height))
+        # y
+        if p1[1] < p2[1] and np.abs((p1[1]+self.model.grid.height) - p2[1]) < min_dist[1]:
+            min_dist[1] = np.abs((p1[1]+self.model.grid.height) - p2[1])
+        if p1[1] > p2[1] and np.abs(p1[1] - (p2[1]+self.model.grid.height)) < min_dist[1]:
+            min_dist[1] = np.abs(p1[1] - (p2[1]+self.model.grid.height))
+        return np.sqrt(np.power(min_dist[0], 2) + np.power(min_dist[1], 2))
+
+class BirdAgentRL(Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
+        self.orientation = random.choice(directions)
+        self.speed = 0.5
+        self.score = 0
+        self.turn_speed = 1
+        self.acceleration = 0.25
+        self.max_speed = 0.75
+        self.min_speed = 0.25
+        self.alive = True
+        self.queue = None
+        self.sight = 5
+        self.flock_num = 3
+        # range in which other birds have to be present to the group to be considered a flock
+        self.flock_area = 6
+        self.neuron = tf.keras.Sequential([
+            tf.keras.layers.Dense(4, activation=tf.nn.relu, input_shape=(4,)),  # input shape required
+            tf.keras.layers.Dense(8, activation=tf.nn.softmax)])
+
+    def step(self):
+        if self.alive:
+            self.move()
+            self.eat()
+
+    def eat(self):
+        this_cell = self.model.grid.get_cell_list_contents([self.pos])
+        if this_cell:
+            grass = [obj for obj in this_cell if isinstance(obj, FoodAgent)]
+            if grass:
+                self.model.grid.remove_agent(grass[0])
+                self.score += self.model.score_for_food
+
+    def move(self):
+        tick = self.model.schedule.time
+        inverse_speed = 1/self.speed
+        if tick % inverse_speed == 0:
+            x, y = self.pos
+            predictedMove = self.rl()
+            max_index = np.argmax(predictedMove)
+
+            if max_index == 0:
+                best_move = [0,-1]
+            elif max_index == 1:
+                best_move = [0,1]
+            elif max_index == 2:
+                best_move = [1,0]
+            elif max_index == 3:
+                best_move = [-1,0]
+            elif max_index == 4:
+                best_move = [1,-1]
+            elif max_index == 5:
+                best_move = [-1,-1]
+            elif max_index == 6:
+                best_move = [-1,1]
+            elif max_index == 7:
+                best_move = [1,1]  
+
+
+            self.model.grid.move_agent(self, (x+best_move[0], y+best_move[1]))
+
+    def rl(self):
+        prediction = self.neuron.predict([self.dataFinder(self.pos)])
+        return prediction
+
+    def dataFinder(self, pos):
+        pos = (np.mod(pos[0], self.model.grid.width), np.mod(pos[1], self.model.grid.height))
+        objects = [agent for agent in self.model.grid.get_neighbors(self.pos, include_center=False, radius=self.sight,
+                                                                    moore=True) if not isinstance(agent, BirdAgentRL)]
+        rlData = [9999,9999,9999,9999]
+        #The Data for the RL model. Predator Distance, Predator Bearing, Food Distance, Food Bearing          
+        for object in objects:
+            if isinstance(object, PredatorAgent):
+                distance = self.get_distance_with_wraparound(pos, object.pos)
+                if rlData[0] > distance :
+                    rlData[0] = distance
+                    dir_vec = np.array(object.pos) - np.array(self.pos)
+                    dir_vec = dir_vec / max(abs(dir_vec))
+                    bearing = np.argmin([np.linalg.norm(similarity) for similarity in [np.array(bearing) - dir_vec for bearing in direction_vector_list]])
+                    rlData[1] = bearing
+
+            if isinstance(object, FoodAgent):
+                distance = self.get_distance_with_wraparound(pos, object.pos)
+                if rlData[2] > distance :
+                    rlData[2] = distance
+                    dir_vec = np.array(object.pos) - np.array(self.pos)
+                    dir_vec = dir_vec / max(abs(dir_vec))
+                    bearing = np.argmin([np.linalg.norm(similarity) for similarity in [np.array(bearing) - dir_vec for bearing in direction_vector_list]])
+                    rlData[3] = bearing
+
+        return rlData
+    
+    def flocking(self):
+        flocking = False
+        agents = [agent for agent in
+                  self.model.grid.get_neighbors(self.pos, include_center=True, radius=self.flock_area, moore=True)
+                  if isinstance(agent, type(self))]
+        if len(agents) >= self.flock_num:
+            flocking = True
+        return flocking
 
     def get_distance_with_wraparound(self, p1, p2):
         p1 = (np.mod(p1[0], self.model.grid.width), np.mod(p1[1], self.model.grid.height))

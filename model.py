@@ -4,7 +4,7 @@ import numpy as np
 from mesa.time import RandomActivation as Activation
 from mesa.space import MultiGrid as Space
 from mesa.datacollection import DataCollector
-from agents import BirdAgent, PredatorAgent, FoodAgent, BirdAgentGA, BirdAgentUCS
+from agents import BirdAgent, PredatorAgent, FoodAgent, BirdAgentGA, BirdAgentUCS, BirdAgentRL
 
 
 def total_score(model):
@@ -28,7 +28,7 @@ class BirdModel(Model):
         self.max_food_id = 0
         self.running = True
         for i in range(self.num_agents):
-            if algorithm == "Dummy":
+            if algorithm == "Dummy":                
                 bird = BirdAgent(i, self)
             elif algorithm == "UCS":
                 bird = BirdAgentUCS(i, self)
@@ -38,7 +38,7 @@ class BirdModel(Model):
                 else:
                     bird = BirdAgentGA(i, self, dnas[np.mod(i, len(dnas))])
             elif algorithm == "DRL":
-                raise NotImplementedError
+                bird = BirdAgentRL(i,self)
             self.schedule.add(bird)
             x = random.randint(0, self.grid.width-1)
             y = random.randint(0, self.grid.height-1)
