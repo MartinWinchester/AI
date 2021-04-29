@@ -20,9 +20,9 @@ class BirdAgent(Agent):
         self.max_speed = 0.75
         self.min_speed = 0.25
         self.alive = True
-        self.flock_num = 3
+        '''self.flock_num = 3
         # range in which other birds have to be present to the group to be considered a flock
-        self.flock_area = 6
+        self.flock_area = 6'''
         self.sight = 7
 
     def step(self):
@@ -65,14 +65,14 @@ class BirdAgent(Agent):
             self.orientation = random.choice(valid_directions)
             self.model.grid.move_agent(self, (x+direction_dict[self.orientation][0], y+direction_dict[self.orientation][1]))
 
-    def flocking(self):
+    '''def flocking(self):
         flocking = False
         agents = [agent for agent in
                   self.model.grid.get_neighbors(self.pos, include_center=True, radius=self.flock_area, moore=True)
                   if isinstance(agent, type(self))]
         if len(agents) >= self.flock_num:
             flocking = True
-        return flocking
+        return flocking'''
 
 
 class FoodAgent(Agent):
@@ -126,7 +126,8 @@ class PredatorAgent(Agent):
         x, y = self.pos
         birds = [agent for agent in self.model.grid.get_neighbors(self.pos, include_center=False, radius=self.sight,
                                                                   moore=True) if isinstance(agent, self.enemy)]
-        hanging_birds = [bird for bird in birds if not bird.flocking()]
+        #hanging_birds = [bird for bird in birds if not bird.flocking()]
+        hanging_birds = birds
         target = None
         target_dist = None
         if hanging_birds:
@@ -156,7 +157,7 @@ class PredatorAgent(Agent):
                                               y + direction_dict[self.orientation][1]))
 
 
-q_bin = 6
+# q_bin = 6
 o_bin = 8
 d_bin = 5
 
@@ -168,7 +169,8 @@ class BirdAgentGA(BirdAgent):
         self.speed = 0.5
         self.score = 0
         self.alive = True
-        self.occurred = []
+        # self.occurred = []
+        self.strategy = [None] * (np.power(o_bin, 2) * np.power(d_bin, 2))
         if dna is None:
             self.strategy = [random.randint(0, 7) for _ in self.strategy]
         else:
@@ -185,14 +187,12 @@ class BirdAgentGA(BirdAgent):
         pd = np.clip(round(pd/2), 0, d_bin-1)
         fd = np.clip(round(fd/2), 0, d_bin-1)
         radius = floor(self.sight / 2)
-        q1b = np.clip(round(self.q_count((self.pos[0] - radius, self.pos[1] + radius), BirdAgentGA)), 0, q_bin-1)
+        '''q1b = np.clip(round(self.q_count((self.pos[0] - radius, self.pos[1] + radius), BirdAgentGA)), 0, q_bin-1)
         q2b = np.clip(round(self.q_count((self.pos[0] + radius, self.pos[1] + radius), BirdAgentGA)), 0, q_bin-1)
         q3b = np.clip(round(self.q_count((self.pos[0] + radius, self.pos[1] - radius), BirdAgentGA)), 0, q_bin-1)
-        q4b = np.clip(round(self.q_count((self.pos[0] - radius, self.pos[1] - radius), BirdAgentGA)), 0, q_bin-1)
-        index = q4b + q3b * q_bin + q2b * np.power(q_bin, 2) + q1b * np.power(q_bin, 3) + fo * np.power(q_bin, 4) + fd \
-               * o_bin * np.power(q_bin, 4) + po * d_bin * o_bin * np.power(q_bin, 4) + pd * d_bin * np.power(q_bin, 4) \
-               * np.power(o_bin, 2)
-        self.occurred.append(int(index))
+        q4b = np.clip(round(self.q_count((self.pos[0] - radius, self.pos[1] - radius), BirdAgentGA)), 0, q_bin-1)'''
+        index = fo + fd * o_bin + po * d_bin * o_bin + pd * d_bin * np.power(o_bin, 2)
+        # self.occurred.append(int(index))
         self.orientation = self.strategy[int(index)]
 
     def object_dd(self, object_type):
@@ -218,12 +218,12 @@ class BirdAgentGA(BirdAgent):
             return target_dist, bearing
         return 0, 0
 
-    def q_count(self, pos, object_type):
+    '''def q_count(self, pos, object_type):
         found = len([agent for agent
                      in
                      self.model.grid.get_neighbors(pos, include_center=True, radius=floor(self.sight / 2), moore=False)
                      if isinstance(agent, object_type)])
-        return found
+        return found'''
 
     def eat(self):
         this_cell = self.model.grid.get_cell_list_contents([self.pos])
@@ -361,9 +361,9 @@ class BirdAgentRL(Agent):
         self.alive = True
         self.queue = None
         self.sight = 5
-        self.flock_num = 3
+        '''self.flock_num = 3
         # range in which other birds have to be present to the group to be considered a flock
-        self.flock_area = 6
+        self.flock_area = 6'''
         self.neuron = tf.keras.Sequential([
             tf.keras.layers.Dense(4, activation=tf.nn.relu, input_shape=(4,)),  # input shape required
             tf.keras.layers.Dense(8, activation=tf.nn.softmax)])
@@ -440,14 +440,14 @@ class BirdAgentRL(Agent):
 
         return rlData
     
-    def flocking(self):
+    '''def flocking(self):
         flocking = False
         agents = [agent for agent in
                   self.model.grid.get_neighbors(self.pos, include_center=True, radius=self.flock_area, moore=True)
                   if isinstance(agent, type(self))]
         if len(agents) >= self.flock_num:
             flocking = True
-        return flocking
+        return flocking'''
 
     def get_distance_with_wraparound(self, p1, p2):
         p1 = (np.mod(p1[0], self.model.grid.width), np.mod(p1[1], self.model.grid.height))

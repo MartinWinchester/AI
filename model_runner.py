@@ -8,13 +8,13 @@ import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--number", default=20, help="population size")
-parser.add_argument("-l", "--load", default="True", help="load pre-trained model from file")
+parser.add_argument("-l", "--load", default="False", help="load pre-trained model from file")
 parser.add_argument("-a", "--algorithm", default="Dummy", help="algorithm to be used, use one of Dummy, GA, Q, DRL")
 parser.add_argument("-s", "--steps", default=100, help="number of steps to run in a batch")
 parser.add_argument("-lr", "--learning_rate", default=0.1, help="learning rate")
 parser.add_argument("-cp", "--checkpoint", default=10, help="number of iterations to run before creating a checkpoint")
-parser.add_argument("-m", "--mutation", default=0.05, help="how many time steps to use in one generation")
-parser.add_argument("-p", "--predators", default=None, help="number of predators")
+parser.add_argument("-m", "--mutation", default=0.02, help="how many time steps to use in one generation")
+parser.add_argument("-p", "--predators", default=6, help="number of predators")
 parser.add_argument("-f", "--food", default="True", help="if true add food to grid")
 
 args = parser.parse_args()

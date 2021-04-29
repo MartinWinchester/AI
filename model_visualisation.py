@@ -24,10 +24,10 @@ def agent_portrayal(agent):
         portrayal["Layer"] = 0
     if isinstance(agent, BirdAgentGA):
         portrayal["Layer"] = agent.unique_id
-        if agent.flocking():
+        '''if agent.flocking():
             portrayal["Color"] = "red"
-        else:
-            portrayal["Color"] = "blue"
+        else:'''
+        portrayal["Color"] = "blue"
     elif isinstance(agent, FoodAgent):
         portrayal["Color"] = "green"
         portrayal["Layer"] = 1

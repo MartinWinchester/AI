@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-dna_size = 2073600
+dna_size = 1600
 
 
 def calc_fitness(agents):
@@ -43,10 +43,10 @@ class Utils:
                                              round(1.1*mutate_gene_num))
             for i in range(mutate_gene_num):
                 child_dna[random.randint(0, dna_size-1)] = random.randint(0, 7)
-            for index in parent_2.occurred:
+            '''for index in parent_2.occurred:
                 child_dna[index] = parent_2.strategy[index]
             for index in parent_1.occurred:
-                child_dna[index] = parent_1.strategy[index]
+                child_dna[index] = parent_1.strategy[index]'''
             new_gen.append(child_dna)
         return new_gen
 
