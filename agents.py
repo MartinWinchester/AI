@@ -353,7 +353,7 @@ class BirdAgentUCS(Agent):
 
 
 DISCOUNT = 0.99
-REPLAY_MEMORY_SIZE = 50_000  # How many last steps to keep for model training
+REPLAY_MEMORY_SIZE = 20_000  # How many last steps to keep for model training
 MIN_REPLAY_MEMORY_SIZE = 1_000  # Minimum number of steps in a memory to start training
 MINIBATCH_SIZE = 64  # How many steps (samples) to use for training
 UPDATE_TARGET_EVERY = 5  # Terminal states (end of episodes)
@@ -383,7 +383,6 @@ class BirdAgentRL(Agent):
         self.target_model = self.create_model()
         self.target_model.set_weights(self.this_model.get_weights())
         # Used to count when to update target network with main network's weights
-        self.target_update_counter = 0
         self.new_observation = None
         self.reward = 0
         self.done = False
@@ -394,20 +393,20 @@ class BirdAgentRL(Agent):
         a = self.pos
         model = Sequential()
 
-        model.add(Conv2D(256, (3, 3), input_shape=(15, 15, 3)))
+        model.add(Conv2D(64, (5, 5), input_shape=(15, 15, 3)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.2))
+        model.add(Dropout(0.15))
 
-        model.add(Conv2D(256, (3, 3)))
+        model.add(Conv2D(128, (3, 3)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.2))
+        model.add(Dropout(0.15))
 
-        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        model.add(Dense(64))
+        model.add(Flatten())
+        model.add(Dense(64, activation='relu'))
 
-        model.add(Dense(8, activation='linear'))  # ACTION_SPACE_SIZE = how many choices (9)
+        model.add(Dense(8))  # ACTION_SPACE_SIZE = how many choices (9)
         model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
         return model
 
@@ -462,12 +461,13 @@ class BirdAgentRL(Agent):
 
         # Update target network counter every episode
         if terminal_state:
-            self.target_update_counter += 1
+            self.model.target_update_counter += 1
 
         # If counter reaches set value, update target network with weights of main network
-        if self.target_update_counter > UPDATE_TARGET_EVERY:
+        if self.model.target_update_counter > UPDATE_TARGET_EVERY:
+            #todo set his to best agents model
             self.target_model.set_weights(self.this_model.get_weights())
-            self.target_update_counter = 0
+            self.model.target_update_counter = 0
 
     # Queries main network for Q values given current observation space (environment state)
     def get_qs(self, state):
@@ -521,16 +521,17 @@ class BirdAgentRL(Agent):
 
             new_state = self.get_image()
 
-            # todo this doesnt look like its propagating the value right, tts almost always just -1
-            # todo also there were to types of NNs that needed to be updated, am I updating both?
+            #todo this doesnt look like its propagating the value right, tts almost always just -1
+            #todo also there were to types of NNs that needed to be updated, am I updating both?
+            #todo what new state is passed in after death?
             score = self.score - self.last_score
+            done = False
             if score == 0:
                 reward = -0.1
             else:
                 reward = score
+                if score < -20 or score > 100:
+                    done = True
 
-            done = False
-            if self.episode_step >= 200:
-                done = True
             self.update_replay_memory((current_state, action, reward, new_state, done))
             self.train(done)

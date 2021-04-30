@@ -30,6 +30,7 @@ class BirdModel(Model):
         self.algorithm = algorithm
         self.epsilon = 1
         self.min_epsilon = 0.001
+        self.target_update_counter = 0
         self.lr = lr
         for i in range(self.num_agents):
             if self.algorithm == "Dummy":

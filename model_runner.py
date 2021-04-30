@@ -115,6 +115,7 @@ if args.algorithm.lower() == "drl":
         bests.append(best)
         worsts.append(worst)
         times.append(ellapsed_time)
+        print("Epoch " + str(epoch))
         epoch += 1
         if np.mod(epoch, int(args.checkpoint)) == 0:
             print("Totals")
