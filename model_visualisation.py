@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import BirdModel
-from agents import BirdAgent, FoodAgent, PredatorAgent, BirdAgentGA, BirdAgentUCS
+from agents import BirdAgent, FoodAgent, PredatorAgent, BirdAgentGA, BirdAgentUCS, BirdAgentRL
 import argparse
 import pickle
 
@@ -22,6 +22,9 @@ def agent_portrayal(agent):
 
     if isinstance(agent, BirdAgent):
         portrayal["Layer"] = 0
+    if isinstance(agent, BirdAgentRL):
+        portrayal["Layer"] = agent.unique_id
+        portrayal["Color"] = "blue"
     if isinstance(agent, BirdAgentGA):
         portrayal["Layer"] = agent.unique_id
         '''if agent.flocking():

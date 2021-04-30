@@ -360,16 +360,11 @@ DISCOUNT = 0.99
 UPDATE_TARGET_EVERY = 5
 
 epsilon = 1
-EPSILON_DECAY = 0.75
+EPSILON_DECAY = 0.975
 MIN_EPSILON = 0.001
 
 
 from utilsRL import ModifiedTensorBoard
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Activation, Flatten
-from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.optimizers import Adam
-
 
 class BirdAgentRL(Agent):
     def __init__(self, unique_id, model):
@@ -377,10 +372,6 @@ class BirdAgentRL(Agent):
         self.orientation = random.choice(directions)
         self.speed = 0.5
         self.score = 0
-        self.turn_speed = 1
-        self.acceleration = 0.25
-        self.max_speed = 0.75
-        self.min_speed = 0.25
         self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
         self.alive = True
         self.queue = None
@@ -527,19 +518,19 @@ class BirdAgentRL(Agent):
 
     def rl(self, state):
 
-        prediction = self.neuralNetwork.predict(np.array(state).reshape(-1, *state.shape))
+        prediction = self.neuralNetwork.predict([state])
         return prediction
 
     def dataFinder(self, pos):
         pos = (np.mod(pos[0], self.model.grid.width), np.mod(pos[1], self.model.grid.height))
         objects = [agent for agent in self.model.grid.get_neighbors(self.pos, include_center=False, radius=self.sight,
                                                                     moore=True) if not isinstance(agent, BirdAgentRL)]
-        rlData = [9999,9999,9999,9999]
+        rlData = [9999, -1, 9999, -1]
         #The Data for the RL model. Predator Distance, Predator Bearing, Food Distance, Food Bearing          
         for object in objects:
             if isinstance(object, PredatorAgent):
                 distance = self.get_distance_with_wraparound(pos, object.pos)
-                if rlData[0] > distance :
+                if rlData[0] > distance:
                     rlData[0] = distance
                     dir_vec = np.array(object.pos) - np.array(self.pos)
                     dir_vec = dir_vec / max(abs(dir_vec))
@@ -548,13 +539,12 @@ class BirdAgentRL(Agent):
 
             if isinstance(object, FoodAgent):
                 distance = self.get_distance_with_wraparound(pos, object.pos)
-                if rlData[2] > distance :
+                if rlData[2] > distance:
                     rlData[2] = distance
                     dir_vec = np.array(object.pos) - np.array(self.pos)
                     dir_vec = dir_vec / max(abs(dir_vec))
                     bearing = np.argmin([np.linalg.norm(similarity) for similarity in [np.array(bearing) - dir_vec for bearing in direction_vector_list]])
                     rlData[3] = bearing
-
         return rlData
     
 
@@ -621,7 +611,7 @@ class BirdAgentRL(Agent):
 
         # If counter reaches set value, update target network with weights of main network
         if self.target_update_counter > UPDATE_TARGET_EVERY:
-            self.targetNetwork.set_weights(self.model.get_weights())
+            self.targetNetwork.set_weights(self.neuralNetwork.get_weights())
             self.target_update_counter = 0
 
 
