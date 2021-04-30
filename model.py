@@ -11,6 +11,11 @@ def total_score(model):
     agent_score = sum([agent.score for agent in model.schedule.agents])
     return agent_score
 
+def average_score(model):
+    average_score = sum([agent.score for agent in model.schedule.agents])
+    average_score = average_score/ len(model.schedule.agents)
+    return average_score
+
 
 class BirdModel(Model):
     def __init__(self, n, width, height, algorithm="Dummy", dnas=None, predators=None, food=True):
@@ -52,7 +57,7 @@ class BirdModel(Model):
             self.grid.place_agent(predator, (x, y))
 
         self.dc = DataCollector(
-            model_reporters={"TotalScore": total_score},
+            model_reporters={"TotalScore": average_score},
             agent_reporters={"Score": "score"})
 
     def step(self):

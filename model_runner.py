@@ -91,6 +91,8 @@ if args.algorithm == "GA":
 
 if args.algorithm != "GA":
     model = BirdModel(n, 100, 50, args.algorithm, predators=p, food=f)
+    averageCounter = 0
+    averageSum = 0
     for i in range(int(args.steps)):
         model.step()
         print(model.dc.model_vars["TotalScore"][-1])
