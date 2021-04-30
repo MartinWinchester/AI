@@ -1,9 +1,10 @@
 from model import BirdModel
-from agents import BirdAgentGA
+from agents import BirdAgentGA, BirdAgentRL
 import argparse
 from utilsGA import *
 import time
 import pickle
+import numpy as np
 import pandas as pd
 
 parser = argparse.ArgumentParser()
@@ -87,9 +88,60 @@ if args.algorithm == "GA":
         start = time.perf_counter()
         del model
         model = BirdModel(n, 100, 50, args.algorithm, new_gen, predators=p, food=f)
+dnas = None
+if args.algorithm.lower() == "drl":
+    if str(args.load).lower() == "true":
+        with open("_weights.txt", "rb") as fp:
+            dnas = pickle.load(fp)
+    bests = []
+    worsts = []
+    totals = []
+    times = []
+    epoch = 0
+    steps = int(args.steps)
 
+    model = BirdModel(n, 100, 50, args.algorithm, predators=p, food=f, steps=steps, dnas=dnas)
+    agents = [agent for agent in model.schedule.agents if isinstance(agent, BirdAgentRL)]
+    while 1:
+        for agent in agents:
+            agent.score = 0
+        print("RESETTING AVERAGES")
+        start = time.perf_counter()
+        for _ in range(0, steps):
+            model.step()
+        end = time.perf_counter()
+        agents = [agent for agent in model.schedule.agents if isinstance(agent, BirdAgentRL)]
+        scores = [agent.score for agent in model.schedule.agents if isinstance(agent, BirdAgentRL)]
+        best_agent = agents[np.argmax(scores)]
+        if np.mod(epoch, int(args.checkpoint)) == 0:
+            with open("weights.txt", "wb") as fp:
+                pickle.dump(best_agent.neuralNetwork.get_weights(), fp)
+        best_agent.update_target()
+        total = model.dc.model_vars["TotalScore"][-1]
+        best = max(scores)
+        worst = min(scores)
+        ellapsed_time = end-start
+        totals.append(total)
+        bests.append(best)
+        worsts.append(worst)
+        times.append(ellapsed_time)
+        epoch += 1
+        print("Episode " + str(epoch))
+        if np.mod(epoch, int(args.checkpoint)) == 0:
+            print("Averages")
+            for tot in totals:
+                print(str(tot))
+            print("Bests")
+            for bes in bests:
+                print(str(bes))
+            print("Worsts")
+            for wors in worsts:
+                print(str(wors))
+            print("Times")
+            for tim in times:
+                print(str(tim))
 
-if args.algorithm != "GA":
+if args.algorithm != "GA" and args.algorithm.lower() != "drl":
     model = BirdModel(n, 100, 50, args.algorithm, predators=p, food=f)
     averageCounter = 0
     averageSum = 0

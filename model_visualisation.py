@@ -57,14 +57,22 @@ grid = CanvasGrid(agent_portrayal, width, height, 800, 800*height/width)
 chart = ChartModule([{"Label": "TotalScore",
                       "Color": "Black"}],
                     data_collector_name='dc')
-dnas = []
+
 
 if args.algorithm == "GA":
     if str(args.best).lower() == "true":
+        dnas = []
         with open("best_dna.txt", "rb") as fp:
             dnas.append(pickle.load(fp).strategy)
     else:
         with open("dnas.txt", "rb") as fp:
+            dnas = pickle.load(fp)
+if args.algorithm == "DRL":
+    if str(args.best).lower() == "true":
+        with open("best_weights.txt", "rb") as fp:
+            dnas = pickle.load(fp)
+    else:
+        with open("weights.txt", "rb") as fp:
             dnas = pickle.load(fp)
 
     server = ModularServer(BirdModel,

@@ -169,7 +169,8 @@ class BirdAgentGA(BirdAgent):
         self.speed = 0.5
         self.score = 0
         self.alive = True
-        # self.occurred = []
+        self.occurred = []
+        self.sight = 7
         self.strategy = [None] * (np.power(o_bin, 2) * np.power(d_bin, 2))
         if dna is None:
             self.strategy = [random.randint(0, 7) for _ in self.strategy]
@@ -192,7 +193,7 @@ class BirdAgentGA(BirdAgent):
         q3b = np.clip(round(self.q_count((self.pos[0] + radius, self.pos[1] - radius), BirdAgentGA)), 0, q_bin-1)
         q4b = np.clip(round(self.q_count((self.pos[0] - radius, self.pos[1] - radius), BirdAgentGA)), 0, q_bin-1)'''
         index = fo + fd * o_bin + po * d_bin * o_bin + pd * d_bin * np.power(o_bin, 2)
-        # self.occurred.append(int(index))
+        self.occurred.append(int(index))
         self.orientation = self.strategy[int(index)]
 
     def object_dd(self, object_type):
@@ -349,76 +350,72 @@ class BirdAgentUCS(Agent):
         return np.sqrt(np.power(min_dist[0], 2) + np.power(min_dist[1], 2))
 
 
+def makeModel():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(4, activation=tf.nn.relu, input_shape=(4,)),  # input shape required
+        tf.keras.layers.Dense(8, activation=tf.nn.softmax)])
+    optimizerAdam = tf.keras.optimizers.Adam(learning_rate=0.001)
+    model.compile(loss="mse", optimizer=optimizerAdam, metrics=['accuracy'])
+    # model = tf.keras.Sequential()
+    # model.add(Conv2D(64, (5, 5), input_shape=(15, 15, 3)))
+    # model.add(Activation('relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(0.15))
+    # model.add(Conv2D(128, (3, 3)))
+    # model.add(Activation('relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(0.15))
+    # model.add(Flatten())
+    # model.add(Dense(64, activation='relu'))
+    # model.add(Dense(8)) # ACTION_SPACE_SIZE = how many choices (9)
+    # model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
+    return model
 from collections import deque
 import time
 import random
+from utilsRL import ModifiedTensorBoard
+
 REPLAY_MEMORY_SIZE = 50_000
-MIN_REPLAY_MEMORY_SIZE = 100
-MINIBATCH_SIZE = 64
+MIN_REPLAY_MEMORY_SIZE = 128
+MINIBATCH_SIZE = 128
 MODEL_NAME = "256x2"
 DISCOUNT = 0.99
-UPDATE_TARGET_EVERY = 5
+UPDATE_TARGET_EVERY = 8
 
 epsilon = 1
 EPSILON_DECAY = 0.975
 MIN_EPSILON = 0.001
+replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
+targetNetwork = makeModel()
 
 
-from utilsRL import ModifiedTensorBoard
+
 
 class BirdAgentRL(Agent):
-    def __init__(self, unique_id, model):
+    def __init__(self, unique_id, model, steps, weights):
         super().__init__(unique_id, model)
         self.orientation = random.choice(directions)
         self.speed = 0.5
         self.score = 0
-        self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
+
         self.alive = True
         self.queue = None
         self.sight = 7
-        self.neuralNetwork = self.makeModel()
-        self.targetNetwork = self.makeModel()
-        self.targetNetwork.set_weights(self.neuralNetwork.get_weights())
+        self.steps = steps
+        self.neuralNetwork = makeModel()
+        if weights is not None:
+            self.neuralNetwork.set_weights(weights)
+            targetNetwork.set_weights(weights)
         self.epsilon = epsilon
         self.current_state = None
         self.new_state = None
-        
+
         self.tensorBoard = ModifiedTensorBoard(log_dir= f"logs/{MODEL_NAME}-{int(time.time())}")
-        self.target_update_counter = 0
-        self.scoreresetcounter=0
-
-
-    def makeModel(self):
-        model = tf.keras.Sequential([
-        tf.keras.layers.Dense(4, activation=tf.nn.relu, input_shape=(4,)),  # input shape required
-        tf.keras.layers.Dense(8, activation=tf.nn.softmax)])
-        optimizerAdam  = tf.keras.optimizers.Adam(learning_rate=0.001)
-        model.compile(loss="mse", optimizer=optimizerAdam, metrics=['accuracy'])
-        #model = tf.keras.Sequential()
-       # model.add(Conv2D(64, (5, 5), input_shape=(15, 15, 3)))
-        #model.add(Activation('relu'))
-        #model.add(MaxPooling2D(pool_size=(2, 2)))
-        #model.add(Dropout(0.15))
-        #model.add(Conv2D(128, (3, 3)))
-        #model.add(Activation('relu'))
-        #model.add(MaxPooling2D(pool_size=(2, 2)))
-        #model.add(Dropout(0.15))
-        #model.add(Flatten())
-        #model.add(Dense(64, activation='relu'))
-        #model.add(Dense(8)) # ACTION_SPACE_SIZE = how many choices (9)
-        #model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
-        return model
 
     def step(self):
         if self.alive:
             self.move()
             self.eat()
-            self.scoreresetcounter = self.scoreresetcounter + 1
-            if self.scoreresetcounter > 100:
-                self.scoreresetcounter = 0
-                self.score = 0
-                print("RESETING AVERAGES")
-            
 
     def dataFinder1(self):
         image = np.zeros((15, 15, 3))
@@ -434,7 +431,7 @@ class BirdAgentRL(Agent):
                 image[relative_pos[0], relative_pos[1], 2] = image[relative_pos[0], relative_pos[1], 2] + 1
         return image
 
- 
+
 
     def get_relative_position_with_wraparound(self, p1, p2):
         p1 = np.array((np.mod(p1[0], self.model.grid.width), np.mod(p1[1], self.model.grid.height)))
@@ -451,7 +448,7 @@ class BirdAgentRL(Agent):
         if p1[1] > p2[1] and np.abs(p1[1] - (p2[1] + self.model.grid.height)) < np.abs(min_dist[1]):
             min_dist[1] = p1[1] - (p2[1] + self.model.grid.height)
         return min_dist + np.array((self.sight, self.sight))
-            
+
 
     def eat(self):
         this_cell = self.model.grid.get_cell_list_contents([self.pos])
@@ -491,7 +488,7 @@ class BirdAgentRL(Agent):
             elif max_index == 6:
                 best_move = [-1,1]
             elif max_index == 7:
-                best_move = [1,1]  
+                best_move = [1,1]
 
             self.model.grid.move_agent(self, (x+best_move[0], y+best_move[1]))
             self.new_state = self.dataFinder(self.pos)
@@ -512,9 +509,9 @@ class BirdAgentRL(Agent):
             predator = [obj for obj in this_cell if isinstance(obj, PredatorAgent)]
             if predator:
                 reward = self.model.score_for_death
-        
+
         return reward
-    
+
 
     def rl(self, state):
 
@@ -526,7 +523,7 @@ class BirdAgentRL(Agent):
         objects = [agent for agent in self.model.grid.get_neighbors(self.pos, include_center=False, radius=self.sight,
                                                                     moore=True) if not isinstance(agent, BirdAgentRL)]
         rlData = [9999, -1, 9999, -1]
-        #The Data for the RL model. Predator Distance, Predator Bearing, Food Distance, Food Bearing          
+        #The Data for the RL model. Predator Distance, Predator Bearing, Food Distance, Food Bearing
         for object in objects:
             if isinstance(object, PredatorAgent):
                 distance = self.get_distance_with_wraparound(pos, object.pos)
@@ -546,7 +543,7 @@ class BirdAgentRL(Agent):
                     bearing = np.argmin([np.linalg.norm(similarity) for similarity in [np.array(bearing) - dir_vec for bearing in direction_vector_list]])
                     rlData[3] = bearing
         return rlData
-    
+
 
     def get_distance_with_wraparound(self, p1, p2):
         p1 = (np.mod(p1[0], self.model.grid.width), np.mod(p1[1], self.model.grid.height))
@@ -565,12 +562,12 @@ class BirdAgentRL(Agent):
         return np.sqrt(np.power(min_dist[0], 2) + np.power(min_dist[1], 2))
 
     def update_replay_memory(self, transition):
-        self.replay_memory.append(transition)
+        replay_memory.append(transition)
 
     def train(self,terminal_state):
-        if len(self.replay_memory)< MIN_REPLAY_MEMORY_SIZE:
+        if len(replay_memory)< MIN_REPLAY_MEMORY_SIZE:
             return
-        minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
+        minibatch = random.sample(replay_memory, MINIBATCH_SIZE)
 
         # Get current states from minibatch, then query NN model for Q values
         current_states = np.array([transition[0] for transition in minibatch])
@@ -579,7 +576,7 @@ class BirdAgentRL(Agent):
         # Get future states from minibatch, then query NN model for Q values
         # When using target network, query it, otherwise main network should be queried
         new_current_states = np.array([transition[3] for transition in minibatch])
-        future_qs_list = self.targetNetwork.predict(new_current_states)
+        future_qs_list = targetNetwork.predict(new_current_states)
 
         X = []
         y = []
@@ -589,7 +586,7 @@ class BirdAgentRL(Agent):
 
             # If not a terminal state, get new q from future states, otherwise set it to 0
             # almost like with Q Learning, but we use just part of equation here
-      
+
             max_future_q = np.max(future_qs_list[index])
             new_q = reward + DISCOUNT * max_future_q
 
@@ -606,12 +603,7 @@ class BirdAgentRL(Agent):
         self.neuralNetwork.fit(np.array(X), np.array(y), batch_size=MINIBATCH_SIZE, 
         verbose=0, shuffle=False, callbacks=[self.tensorBoard] if terminal_state else None)
 
-        # Update target network counter every episode
-        self.target_update_counter += 1
 
-        # If counter reaches set value, update target network with weights of main network
-        if self.target_update_counter > UPDATE_TARGET_EVERY:
-            self.targetNetwork.set_weights(self.neuralNetwork.get_weights())
-            self.target_update_counter = 0
-
+    def update_target(self):
+        targetNetwork.set_weights(self.neuralNetwork.get_weights())
 

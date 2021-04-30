@@ -18,9 +18,9 @@ def average_score(model):
 
 
 class BirdModel(Model):
-    def __init__(self, n, width, height, algorithm="Dummy", dnas=None, predators=None, food=True):
-        self.score_for_food = 10
-        self.score_for_death = 20
+    def __init__(self, n, width, height, algorithm="Dummy", dnas=None, predators=None, food=True, steps=100):
+        self.score_for_food = 200
+        self.score_for_death = 400
         self.num_agents = n
         self.food = food
         if predators is None:
@@ -43,7 +43,10 @@ class BirdModel(Model):
                 else:
                     bird = BirdAgentGA(i, self, dnas[np.mod(i, len(dnas))])
             elif algorithm == "DRL":
-                bird = BirdAgentRL(i,self)
+                if dnas is None:
+                    bird = BirdAgentRL(i, self, steps, dnas)
+                else:
+                    bird = BirdAgentRL(i, self, steps, dnas)
             self.schedule.add(bird)
             x = random.randint(0, self.grid.width-1)
             y = random.randint(0, self.grid.height-1)
@@ -69,3 +72,4 @@ class BirdModel(Model):
             self.grid.place_agent(food, (x, y))
         self.dc.collect(self)
         self.schedule.step()
+        # print(str(self.schedule.time))

@@ -17,7 +17,7 @@ class Utils:
 
     def natural_selection(self, fitness_tuples, num, mutation):
         self.mating_pool = []
-        scores = [score for score, ag in fitness_tuples]
+        scores = [np.sign(score)*np.power(score, 2) for score, ag in fitness_tuples]
         minimum = np.min(scores)
         maximum = np.max(scores)
         difference = maximum - minimum
@@ -41,12 +41,12 @@ class Utils:
             mutate_gene_num = dna_size * mutation
             mutate_gene_num = random.randint(round(0.9*mutate_gene_num),
                                              round(1.1*mutate_gene_num))
-            for i in range(mutate_gene_num):
+            for _ in range(mutate_gene_num):
                 child_dna[random.randint(0, dna_size-1)] = random.randint(0, 7)
-            '''for index in parent_2.occurred:
+            for index in parent_2.occurred:
                 child_dna[index] = parent_2.strategy[index]
             for index in parent_1.occurred:
-                child_dna[index] = parent_1.strategy[index]'''
+                child_dna[index] = parent_1.strategy[index]
             new_gen.append(child_dna)
         return new_gen
 
