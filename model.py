@@ -13,7 +13,7 @@ def total_score(model):
 
 
 class BirdModel(Model):
-    def __init__(self, n, width, height, algorithm="Dummy", dnas=None, predators=None, food=True):
+    def __init__(self, n, width, height, algorithm="Dummy", dnas=None, predators=None, food=True, lr=0.002):
         self.score_for_food = 10
         self.score_for_death = 20
         self.num_agents = n
@@ -27,25 +27,29 @@ class BirdModel(Model):
         self.schedule = Activation(self)
         self.max_food_id = 0
         self.running = True
+        self.algorithm = algorithm
+        self.epsilon = 1
+        self.min_epsilon = 0.001
+        self.lr = lr
         for i in range(self.num_agents):
-            if algorithm == "Dummy":                
+            if self.algorithm == "Dummy":
                 bird = BirdAgent(i, self)
-            elif algorithm == "UCS":
+            elif self.algorithm == "UCS":
                 bird = BirdAgentUCS(i, self)
-            elif algorithm == "GA":
+            elif self.algorithm == "GA":
                 if dnas is None:
                     bird = BirdAgentGA(i, self, dnas)
                 else:
                     bird = BirdAgentGA(i, self, dnas[np.mod(i, len(dnas))])
-            elif algorithm == "DRL":
-                bird = BirdAgentRL(i,self)
+            elif self.algorithm == "DRL":
+                bird = BirdAgentRL(i, self)
             self.schedule.add(bird)
             x = random.randint(0, self.grid.width-1)
             y = random.randint(0, self.grid.height-1)
             self.grid.place_agent(bird, (x, y))
 
         for j in range(i + 1, i + 1 + self.num_predator):
-            predator = PredatorAgent(j, self, algorithm)
+            predator = PredatorAgent(j, self)
             self.schedule.add(predator)
             x = random.randint(0, self.grid.width - 1)
             y = random.randint(0, self.grid.height - 1)
@@ -64,3 +68,6 @@ class BirdModel(Model):
             self.grid.place_agent(food, (x, y))
         self.dc.collect(self)
         self.schedule.step()
+        if self.epsilon > self.min_epsilon:
+            epsilon = self.epsilon * self.lr
+            self.epsilon = max(self.min_epsilon, epsilon)

@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import BirdModel
-from agents import BirdAgent, FoodAgent, PredatorAgent, BirdAgentGA, BirdAgentUCS
+from agents import BirdAgent, FoodAgent, PredatorAgent, BirdAgentGA, BirdAgentUCS, BirdAgentRL
 import argparse
 import pickle
 
@@ -37,6 +37,9 @@ def agent_portrayal(agent):
         portrayal["Layer"] = 2
         portrayal["r"] = 1
     elif isinstance(agent, BirdAgentUCS):
+        portrayal["Color"] = "blue"
+        portrayal["Layer"] = 0
+    elif isinstance(agent, BirdAgentRL):
         portrayal["Color"] = "blue"
         portrayal["Layer"] = 0
     return portrayal
